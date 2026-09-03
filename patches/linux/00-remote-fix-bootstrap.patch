@@ -1,5 +1,5 @@
 diff --git a/src/bootstrap-esm.ts b/src/bootstrap-esm.ts
-index 49098a31..0b4cec2a 100644
+index 49098a31..aeed647a 100644
 --- a/src/bootstrap-esm.ts
 +++ b/src/bootstrap-esm.ts
 @@ -4,7 +4,7 @@
@@ -20,3 +20,12 @@ index 49098a31..0b4cec2a 100644
  		return; // only on Electron / Electron-as-node
  	}
  
+@@ -233,7 +233,7 @@ function enableASARSupport(): void {
+ 	// Unlike process.resourcesPath, import.meta.dirname reflects Node's junction-resolved module path.
+ 	const appRoot = dirname(import.meta.dirname);
+ 
+-	register(`data:text/javascript;base64,${Buffer.from(jsCode).toString('base64')}`, import.meta.url, {
++	Module.register(`data:text/javascript;base64,${Buffer.from(jsCode).toString('base64')}`, import.meta.url, {
+ 		data: process.env['VSCODE_DEV'] ? {} : {
+ 			resourcesPath: appRoot,
+ 			asarPath: join(appRoot, 'node_modules.asar'),

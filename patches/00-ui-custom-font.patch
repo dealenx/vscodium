@@ -1511,18 +1511,10 @@ index b04b3c70..8c7a7a5f 100644
 +}
 \ No newline at end of file
 diff --git a/src/vs/workbench/browser/parts/activitybar/activitybarPart.ts b/src/vs/workbench/browser/parts/activitybar/activitybarPart.ts
-index 6a218d75..6cf2494e 100644
+index 6a218d75..325bceae 100644
 --- a/src/vs/workbench/browser/parts/activitybar/activitybarPart.ts
 +++ b/src/vs/workbench/browser/parts/activitybar/activitybarPart.ts
-@@ -25,6 +25,7 @@ import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js
- import { KeyCode } from '../../../../base/common/keyCodes.js';
- import { HoverPosition } from '../../../../base/browser/ui/hover/hoverWidget.js';
- import { GestureEvent } from '../../../../base/browser/touch.js';
-+import { FONT } from '../../../../base/common/font.js';
- import { IPaneCompositePart } from '../paneCompositePart.js';
- import { IPaneCompositeBarOptions, PaneCompositeBar } from '../paneCompositeBar.js';
- import { GlobalCompositeBar } from '../globalCompositeBar.js';
-@@ -39,14 +40,17 @@ import { IExtensionService } from '../../../services/extensions/common/extension
+@@ -39,14 +39,17 @@ import { IExtensionService } from '../../../services/extensions/common/extension
  import { IWorkbenchEnvironmentService } from '../../../services/environment/common/environmentService.js';
  import { IViewsService } from '../../../services/views/common/viewsService.js';
  import { SwitchCompositeViewAction } from '../compositeBarActions.js';
@@ -1540,7 +1532,7 @@ index 6a218d75..6cf2494e 100644
  
  	/** Narrower dimensions used when the floating panels (Modern UI) experiment is enabled. */
  	static readonly FLOATING_ACTION_HEIGHT = 36;
-@@ -55,6 +59,7 @@ export class ActivitybarPart extends Part {
+@@ -55,6 +58,7 @@ export class ActivitybarPart extends Part {
  
  	static readonly ICON_SIZE = 24;
  	static readonly COMPACT_ICON_SIZE = 16;
@@ -1548,7 +1540,7 @@ index 6a218d75..6cf2494e 100644
  
  	/**
  	 * Gutter reserved on the left and bottom edges under the floating panels
-@@ -82,7 +87,7 @@ export class ActivitybarPart extends Part {
+@@ -82,7 +86,7 @@ export class ActivitybarPart extends Part {
  		if (this.layoutService.isFloatingPanelsEnabled()) {
  			return this._isCompact ? ActivitybarPart.FLOATING_COMPACT_ACTIVITYBAR_WIDTH : ActivitybarPart.FLOATING_ACTIVITYBAR_WIDTH;
  		}
@@ -1557,7 +1549,7 @@ index 6a218d75..6cf2494e 100644
  	}
  
  	/** The action (item) height that drives visible item sizing and the composite bar overflow size. */
-@@ -129,14 +134,23 @@ export class ActivitybarPart extends Part {
+@@ -129,14 +133,23 @@ export class ActivitybarPart extends Part {
  				this._onDidChange.fire(undefined);
  			}
  		}));
@@ -1583,7 +1575,7 @@ index 6a218d75..6cf2494e 100644
  		}
  	}
  
-@@ -192,6 +206,10 @@ export class ActivitybarPart extends Part {
+@@ -192,6 +205,10 @@ export class ActivitybarPart extends Part {
  		this.element = parent;
  		this.content = append(this.element, $('.content'));
  
@@ -1594,7 +1586,7 @@ index 6a218d75..6cf2494e 100644
  		this.updateCompactStyle();
  
  		if (this.layoutService.isVisible(Parts.ACTIVITYBAR_PART)) {
-@@ -201,6 +219,38 @@ export class ActivitybarPart extends Part {
+@@ -201,6 +218,38 @@ export class ActivitybarPart extends Part {
  		return this.content;
  	}
  
@@ -1813,18 +1805,10 @@ index aec3de2d..b0e1fd8f 100644
  	flex: 1;
  }
 diff --git a/src/vs/workbench/browser/parts/editor/editorTabsControl.ts b/src/vs/workbench/browser/parts/editor/editorTabsControl.ts
-index 0ccf6da1..c7ab820b 100644
+index 0ccf6da1..c6069f9a 100644
 --- a/src/vs/workbench/browser/parts/editor/editorTabsControl.ts
 +++ b/src/vs/workbench/browser/parts/editor/editorTabsControl.ts
-@@ -10,6 +10,7 @@ import { $, Dimension, getActiveWindow, getWindow, isMouseEvent, setVisibility }
- import { StandardMouseEvent } from '../../../../base/browser/mouseEvent.js';
- import { ActionsOrientation, IActionViewItem, prepareActions } from '../../../../base/browser/ui/actionbar/actionbar.js';
- import { IAction, ActionRunner } from '../../../../base/common/actions.js';
-+import { FONT } from '../../../../base/common/font.js';
- import { ResolvedKeybinding } from '../../../../base/common/keybindings.js';
- import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
- import { createActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
-@@ -46,6 +47,8 @@ import { ServiceCollection } from '../../../../platform/instantiation/common/ser
+@@ -46,6 +46,8 @@ import { ServiceCollection } from '../../../../platform/instantiation/common/ser
  import { IBaseActionViewItemOptions } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
  import { MarkdownString } from '../../../../base/common/htmlContent.js';
  import { IManagedHoverTooltipMarkdownString } from '../../../../base/browser/ui/hover/hover.js';
@@ -1833,7 +1817,7 @@ index 0ccf6da1..c7ab820b 100644
  import { applyDragImage } from '../../../../base/browser/ui/dnd/dnd.js';
  
  export class EditorCommandsContextActionRunner extends ActionRunner {
-@@ -99,15 +102,17 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
+@@ -99,15 +101,17 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
  	protected readonly groupTransfer = LocalSelectionTransfer.getInstance<DraggedEditorGroupIdentifier>();
  	protected readonly treeItemsTransfer = LocalSelectionTransfer.getInstance<DraggedTreeItemsIdentifier>();
  
@@ -1860,7 +1844,7 @@ index 0ccf6da1..c7ab820b 100644
  
  	protected editorActionsToolbarContainer: HTMLElement | undefined;
  	private editorActionsToolbar: WorkbenchToolBar | undefined;
-@@ -146,6 +151,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
+@@ -146,6 +150,7 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
  		protected readonly tabsModel: IReadonlyEditorGroupModel,
  		protected readonly menuIds: IEditorGroupMenuIds | undefined,
  		@IContextMenuService protected readonly contextMenuService: IContextMenuService,
@@ -1868,7 +1852,7 @@ index 0ccf6da1..c7ab820b 100644
  		@IInstantiationService protected instantiationService: IInstantiationService,
  		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
  		@IKeybindingService private readonly keybindingService: IKeybindingService,
-@@ -162,6 +168,17 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
+@@ -162,6 +167,17 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
  
  		const container = this.create(parent);
  
@@ -1886,7 +1870,7 @@ index 0ccf6da1..c7ab820b 100644
  		// Context Keys
  		this.contextMenuContextKeyService = this._register(this.contextKeyService.createScoped(container));
  		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection(
-@@ -183,10 +200,40 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
+@@ -183,10 +199,40 @@ export abstract class EditorTabsControl extends Themable implements IEditorTabsC
  	}
  
  	protected create(parent: HTMLElement): HTMLElement {

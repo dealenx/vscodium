@@ -104,7 +104,7 @@ index 62e1da38..ffeb3aea 100644
  						'@vscode/spdlog',
  						'@vscode/windows-process-tree',
 diff --git a/package-lock.json b/package-lock.json
-index 38482e36..afe9145a 100644
+index 38482e36..8fe7ce96 100644
 --- a/package-lock.json
 +++ b/package-lock.json
 @@ -32,7 +32,6 @@
@@ -177,6 +177,43 @@ index 38482e36..afe9145a 100644
      "node_modules/@webgpu/types": {
        "version": "0.1.66",
        "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.66.tgz",
+@@ -6122,6 +6122,15 @@
+         "node": ">=10.0.0"
+       }
+     },
++    "node_modules/buildcheck": {
++      "version": "0.0.7",
++      "resolved": "https://registry.npmjs.org/buildcheck/-/buildcheck-0.0.7.tgz",
++      "integrity": "sha512-lHblz4ahamxpTmnsk+MNTRWsjYKv965MwOrSJyeD588rR3Jcu7swE+0wN5F+PbL5cjgu/9ObkhfzEPuofEMwLA==",
++      "optional": true,
++      "engines": {
++        "node": ">=10.0.0"
++      }
++    },
+     "node_modules/bundle-name": {
+       "version": "4.1.0",
+       "resolved": "https://registry.npmjs.org/bundle-name/-/bundle-name-4.1.0.tgz",
+@@ -7026,6 +7035,20 @@
+         "node": ">=10.0.0"
+       }
+     },
++    "node_modules/cpu-features": {
++      "version": "0.0.10",
++      "resolved": "https://registry.npmjs.org/cpu-features/-/cpu-features-0.0.10.tgz",
++      "integrity": "sha512-9IkYqtX3YHPCzoVg1Py+o9057a3i0fp7S530UWokCSaFVTc7CwXPRiOjRjBQQ18ZCNafx78YfnG+HALxtVmOGA==",
++      "hasInstallScript": true,
++      "optional": true,
++      "dependencies": {
++        "buildcheck": "~0.0.6",
++        "nan": "^2.19.0"
++      },
++      "engines": {
++        "node": ">=10.0.0"
++      }
++    },
+     "node_modules/cross-spawn": {
+       "version": "7.0.6",
+       "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
 diff --git a/package.json b/package.json
 index 50bc6675..74119f43 100644
 --- a/package.json
@@ -320,10 +357,10 @@ index 90667682..de250c8d 100644
  
  	test('node-pty', async () => {
 diff --git a/src/vs/platform/policy/node/nativeManagedSettingsService.ts b/src/vs/platform/policy/node/nativeManagedSettingsService.ts
-index 29d621df..2207e1bb 100644
+index 29d621df..4158e24c 100644
 --- a/src/vs/platform/policy/node/nativeManagedSettingsService.ts
 +++ b/src/vs/platform/policy/node/nativeManagedSettingsService.ts
-@@ -12,7 +12,7 @@ import { IManagedSettingsPolicyDefinitions, ManagedSettingsData } from '../../..
+@@ -12,13 +12,14 @@ import { IManagedSettingsPolicyDefinitions, ManagedSettingsData } from '../../..
  import { ILogService } from '../../log/common/log.js';
  import { collectManagedSettingsDefinitions, INativeManagedSettingsService } from '../common/copilotManagedSettings.js';
  import { PolicyDefinition, PolicyValue } from '../common/policy.js';
@@ -332,12 +369,19 @@ index 29d621df..2207e1bb 100644
  
  export interface INativePolicyWatcherOptions {
  	readonly registryPath?: string;
-@@ -90,11 +90,11 @@ export class NativeManagedSettingsService extends Disposable implements INativeM
+ }
+ 
+ export type NativePolicyWatcherFactory = (
++	vendorName: string,
+ 	productName: string,
+ 	policies: Record<string, { type: 'string' | 'number' | 'boolean' }>,
+ 	onDidChange: (update: Record<string, PolicyValue | undefined>) => void,
+@@ -90,11 +91,11 @@ export class NativeManagedSettingsService extends Disposable implements INativeM
  			return;
  		}
  
 -		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscode/policy-watcher') as { createWatcher: NativePolicyWatcherFactory });
-+		const { createWatcher } = this.watcherFactory ? { createWatcher: this.watcherFactory } : (await import('@vscodium/policy-watcher') as { createWatcher: NativePolicyWatcherFactory });
++		const createWatcher = this.watcherFactory ?? ((await import('@vscodium/policy-watcher')) as unknown as { createWatcher: NativePolicyWatcherFactory }).createWatcher;
  		await this.throttler.queue(() => new Promise<void>((c, e) => {
  			try {
  				this.logService.trace(`Creating native managed-settings watcher for productName ${this.productName}`);

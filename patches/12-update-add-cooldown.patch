@@ -15,44 +15,8 @@ index ae394003..6be1522d 100644
  		'update.enableWindowsBackgroundUpdates': {
  			type: 'boolean',
  			default: true,
-diff --git a/src/vs/platform/update/electron-main/abstractUpdateService.ts b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-index c15924aa..f9a1d213 100644
---- a/src/vs/platform/update/electron-main/abstractUpdateService.ts
-+++ b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-@@ -583,7 +583,30 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
- 
- 				const lastest = semver.compareBuild(currentVersion, fetchedVersion) >= 0;
- 
--				return Promise.resolve({ lastest, update });
-+				const minReleaseAge = this.configurationService.getValue<number>('update.minReleaseAge');
-+
-+				if(minReleaseAge === 0) {
-+					return Promise.resolve({ lastest, update });
-+				}
-+
-+				const releaseDate = update.timestamp ? new Date(Number.parseInt(String(update.timestamp), 10)) : null;
-+
-+				this.logService.info(`update#isLatestVersion() - releaseDate: ${releaseDate}`);
-+
-+				if(!releaseDate || isNaN(releaseDate.getTime())) {
-+					return Promise.resolve(undefined);
-+				}
-+
-+				const age = Math.round(Math.abs(Date.now() - releaseDate.getTime()) / (1000 * 60 * 60));
-+
-+				this.logService.info(`update#isLatestVersion() - releaseAge: ${age}, minReleaseAge: ${minReleaseAge}`);
-+
-+				if(age >= minReleaseAge) {
-+					return Promise.resolve({ lastest, update });
-+				}
-+				else {
-+					return Promise.resolve(undefined);
-+				}
- 			})
- 	}
- 
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-index 5a1a34f7..07853739 100644
+index 5a1a34f7..333993cd 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 @@ -199,6 +199,13 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
@@ -69,6 +33,20 @@ index 5a1a34f7..07853739 100644
  			'extensions.showRecommendationsOnlyOnDemand': {
  				type: 'boolean',
  				deprecationMessage: localize('extensionsShowRecommendationsOnlyOnDemand_Deprecated', "This setting is deprecated. Use extensions.ignoreRecommendations setting to control recommendation notifications. Use Extensions view's visibility actions to hide Recommended view by default."),
+@@ -371,6 +378,13 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
+ 				scope: ConfigurationScope.APPLICATION,
+ 				tags: ['advanced', 'usesOnlineServices']
+ 			},
++			'extensions.excludeUnsafes': {
++				scope: ConfigurationScope.MACHINE,
++				type: 'boolean',
++				default: true,
++				description: localize('extensionsExcludeUnsafes', "When enabled, it will download and cache the list of malicious and deprecated extensions. It's recommended to leave it enabled."),
++				tags: ['usesOnlineServices']
++			},
+ 		}
+ 	});
+ 
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
 index 25417cdf..99ecaa2d 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts

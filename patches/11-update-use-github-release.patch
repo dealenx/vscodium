@@ -55,7 +55,7 @@ index 1afbb0d3..87c877fd 100644
 +	| "user";
 \ No newline at end of file
 diff --git a/src/vs/platform/update/electron-main/abstractUpdateService.ts b/src/vs/platform/update/electron-main/abstractUpdateService.ts
-index 694b9682..c15924aa 100644
+index 694b9682..f9a1d213 100644
 --- a/src/vs/platform/update/electron-main/abstractUpdateService.ts
 +++ b/src/vs/platform/update/electron-main/abstractUpdateService.ts
 @@ -17,11 +17,12 @@ import { IEnvironmentMainService } from '../../environment/electron-main/environ
@@ -125,7 +125,7 @@ index 694b9682..c15924aa 100644
  			cts.dispose();
  		} catch (error) {
  			this.logService.warn('update#checkForOverwriteUpdates(): failed to check for updates, proceeding with restart');
-@@ -519,45 +516,75 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
+@@ -519,45 +516,98 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
  
  			this._overwrite = true;
  			this.setState(State.Overwriting(this._state.update, explicit));
@@ -212,12 +212,35 @@ index 694b9682..c15924aa 100644
 +
 +				const lastest = semver.compareBuild(currentVersion, fetchedVersion) >= 0;
 +
-+				return Promise.resolve({ lastest, update });
++				const minReleaseAge = this.configurationService.getValue<number>('update.minReleaseAge');
++
++				if(minReleaseAge === 0) {
++					return Promise.resolve({ lastest, update });
++				}
++
++				const releaseDate = update.timestamp ? new Date(Number.parseInt(String(update.timestamp), 10)) : null;
++
++				this.logService.info(`update#isLatestVersion() - releaseDate: ${releaseDate}`);
++
++				if(!releaseDate || isNaN(releaseDate.getTime())) {
++					return Promise.resolve(undefined);
++				}
++
++				const age = Math.round(Math.abs(Date.now() - releaseDate.getTime()) / (1000 * 60 * 60));
++
++				this.logService.info(`update#isLatestVersion() - releaseAge: ${age}, minReleaseAge: ${minReleaseAge}`);
++
++				if(age >= minReleaseAge) {
++					return Promise.resolve({ lastest, update });
++				}
++				else {
++					return Promise.resolve(undefined);
++				}
 +			})
  	}
  
  	async _applySpecificUpdate(packagePath: string): Promise<void> {
-@@ -601,6 +628,14 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
+@@ -601,6 +651,14 @@ export abstract class AbstractUpdateService extends Disposable implements IUpdat
  		await this.cancelPendingUpdate();
  	}
  
@@ -340,7 +363,7 @@ index 90634472..71ee9cfb 100644
  		electron.autoUpdater.checkForUpdates();
  	}
 diff --git a/src/vs/platform/update/electron-main/updateService.linux.ts b/src/vs/platform/update/electron-main/updateService.linux.ts
-index dbb08664..65fe2654 100644
+index dbb08664..61f02f6b 100644
 --- a/src/vs/platform/update/electron-main/updateService.linux.ts
 +++ b/src/vs/platform/update/electron-main/updateService.linux.ts
 @@ -3,7 +3,6 @@
@@ -351,7 +374,7 @@ index dbb08664..65fe2654 100644
  import { IConfigurationService } from '../../configuration/common/configuration.js';
  import { IEnvironmentMainService } from '../../environment/electron-main/environmentMainService.js';
  import { ILifecycleMainService } from '../../lifecycle/electron-main/lifecycleMainService.js';
-@@ -11,7 +10,7 @@ import { ILogService } from '../../log/common/log.js';
+@@ -11,10 +10,10 @@ import { ILogService } from '../../log/common/log.js';
  import { IMeteredConnectionService } from '../../meteredConnection/common/meteredConnection.js';
  import { INativeHostMainService } from '../../native/electron-main/nativeHostMainService.js';
  import { IProductService } from '../../product/common/productService.js';
@@ -359,7 +382,11 @@ index dbb08664..65fe2654 100644
 +import { IRequestService } from '../../request/common/request.js';
  import { IApplicationStorageMainService } from '../../storage/electron-main/storageMainService.js';
  import { ITelemetryService } from '../../telemetry/common/telemetry.js';
- import { AvailableForDownload, IUpdate, State, StateType, UpdateType } from '../common/update.js';
+-import { AvailableForDownload, IUpdate, State, StateType, UpdateType } from '../common/update.js';
++import { AvailableForDownload, State, StateType, UpdateType } from '../common/update.js';
+ import { AbstractUpdateService, createUpdateURL, IUpdateURLOptions } from './abstractUpdateService.js';
+ 
+ export class LinuxUpdateService extends AbstractUpdateService {
 @@ -34,43 +33,57 @@ export class LinuxUpdateService extends AbstractUpdateService {
  		super(lifecycleMainService, configurationService, environmentMainService, requestService, logService, productService, telemetryService, applicationStorageMainService, meteredConnectionService, false);
  	}
@@ -435,18 +462,21 @@ index dbb08664..65fe2654 100644
  	}
  
 diff --git a/src/vs/platform/update/electron-main/updateService.win32.ts b/src/vs/platform/update/electron-main/updateService.win32.ts
-index 3b937ac3..14910582 100644
+index 3b937ac3..55c899ea 100644
 --- a/src/vs/platform/update/electron-main/updateService.win32.ts
 +++ b/src/vs/platform/update/electron-main/updateService.win32.ts
-@@ -13,7 +13,6 @@ import { VSBuffer } from '../../../base/common/buffer.js';
+@@ -11,9 +11,9 @@ import { release, tmpdir } from 'os';
+ import { Delayer, ProcessTimeRunOnceScheduler, timeout } from '../../../base/common/async.js';
+ import { VSBuffer } from '../../../base/common/buffer.js';
  import { CancellationTokenSource } from '../../../base/common/cancellation.js';
++import { hash } from '../../../base/common/hash.js';
  import { memoize } from '../../../base/common/decorators.js';
  import { isCancellationError } from '../../../base/common/errors.js';
 -import { hash } from '../../../base/common/hash.js';
  import * as path from '../../../base/common/path.js';
  import { basename } from '../../../base/common/path.js';
  import { transform } from '../../../base/common/stream.js';
-@@ -30,11 +29,11 @@ import { ILogService } from '../../log/common/log.js';
+@@ -30,10 +30,10 @@ import { ILogService } from '../../log/common/log.js';
  import { IMeteredConnectionService } from '../../meteredConnection/common/meteredConnection.js';
  import { INativeHostMainService } from '../../native/electron-main/nativeHostMainService.js';
  import { IProductService } from '../../product/common/productService.js';
@@ -455,13 +485,11 @@ index 3b937ac3..14910582 100644
  import { IApplicationStorageMainService } from '../../storage/electron-main/storageMainService.js';
  import { ITelemetryService } from '../../telemetry/common/telemetry.js';
 -import { AvailableForDownload, DisablementReason, IUpdate, State, StateType, UpdateType } from '../common/update.js';
--import { AbstractUpdateService, createUpdateURL, getUpdateRequestHeaders, IUpdateURLOptions, UpdateErrorClassification } from './abstractUpdateService.js';
 +import { AvailableForDownload, DisablementReason, IUpdate, State, StateType, Target, UpdateType } from '../common/update.js';
-+import { AbstractUpdateService, createUpdateURL, IUpdateURLOptions } from './abstractUpdateService.js';
+ import { AbstractUpdateService, createUpdateURL, getUpdateRequestHeaders, IUpdateURLOptions, UpdateErrorClassification } from './abstractUpdateService.js';
  
  interface IAvailableUpdate {
- 	packagePath: string;
-@@ -48,9 +47,13 @@ interface IAvailableUpdate {
+@@ -48,9 +48,13 @@ interface IAvailableUpdate {
  let _updateType: UpdateType | undefined = undefined;
  function getUpdateType(): UpdateType {
  	if (typeof _updateType === 'undefined') {
@@ -478,7 +506,7 @@ index 3b937ac3..14910582 100644
  	}
  
  	return _updateType;
-@@ -160,9 +163,10 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -160,9 +164,10 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  		const updatingVersionPath = path.join(exeDir, 'updating_version');
  		if (await pfs.Promises.exists(updatingVersionPath)) {
  			try {
@@ -490,7 +518,7 @@ index 3b937ac3..14910582 100644
  				if (await pfs.Promises.exists(updatePackagePath)) {
  					await this._applySpecificUpdate(updatePackagePath, updatingVersion);
  					this.logService.info(`update#doCheckForUpdates - successfully applied update to version ${updatingVersion}`);
-@@ -182,7 +186,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -182,7 +187,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  			return;
  		}
  
@@ -499,7 +527,7 @@ index 3b937ac3..14910582 100644
  		// GC for background updates in system setup happens via inno_setup since it requires elevated permissions.
  		if (!fastUpdatesEnabled || this.productService.target !== 'user' || !this.productService.commit) {
  			return;
-@@ -208,27 +212,33 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -208,27 +213,33 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  		});
  	}
  
@@ -546,7 +574,7 @@ index 3b937ac3..14910582 100644
  		// Only set CheckingForUpdates if we're not already in Overwriting state
  		if (this.state.type !== StateType.Overwriting) {
  			this.setState(State.CheckingForUpdates(explicit));
-@@ -239,17 +249,21 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -239,17 +250,21 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  		const cts = this.checkCancellationTokenSource = new CancellationTokenSource();
  		const token = cts.token;
  
@@ -573,7 +601,7 @@ index 3b937ac3..14910582 100644
  					// If we were checking for an overwrite update and found nothing newer,
  					// restore the Ready state with the pending update
  					if (this.state.type === StateType.Overwriting) {
-@@ -261,6 +275,13 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -261,6 +276,13 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  					return Promise.resolve(null);
  				}
  
@@ -587,7 +615,7 @@ index 3b937ac3..14910582 100644
  				if (updateType === UpdateType.Archive) {
  					this.setState(State.AvailableForDownload(update));
  					return Promise.resolve(null);
-@@ -278,7 +299,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -278,7 +300,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  				this.setState(State.Downloading(update, explicit, this._overwrite, 0, undefined, startTime));
  
  				return this.cleanup(update.version).then(() => {
@@ -596,7 +624,7 @@ index 3b937ac3..14910582 100644
  						return pfs.Promises.exists(updatePackagePath).then(exists => {
  							if (exists) {
  								return Promise.resolve(updatePackagePath);
-@@ -286,7 +307,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -286,7 +308,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  
  							const downloadPath = `${updatePackagePath}.tmp`;
  
@@ -605,7 +633,7 @@ index 3b937ac3..14910582 100644
  								.then(context => {
  									// Get total size from Content-Length header
  									const contentLengthHeader = context.res.headers['content-length'];
-@@ -377,13 +398,15 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -377,13 +399,15 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  		this.setState(State.Idle(getUpdateType()));
  	}
  
@@ -624,7 +652,7 @@ index 3b937ac3..14910582 100644
  
  		const cachePath = await this.cachePath;
  		const versions = await pfs.Promises.readdir(cachePath);
-@@ -424,24 +447,38 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -424,24 +448,38 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  			await this.unlink(progressFilePath);
  			await pfs.Promises.writeFile(this.availableUpdate.updateFilePath, 'flag');
  
@@ -677,7 +705,7 @@ index 3b937ac3..14910582 100644
  
  			// Track the process so we can cancel it if needed
  			this.availableUpdate.updateProcess = child;
-@@ -614,11 +651,23 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
+@@ -614,11 +652,23 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
  				// ignore
  			}
  		} else {
@@ -704,5 +732,18 @@ index 3b937ac3..14910582 100644
 +				});
 +			}
  		}
+ 	}
+ 
+diff --git a/src/vs/platform/update/test/electron-main/abstractUpdateService.test.ts b/src/vs/platform/update/test/electron-main/abstractUpdateService.test.ts
+index 2766d433..0b8e9084 100644
+--- a/src/vs/platform/update/test/electron-main/abstractUpdateService.test.ts
++++ b/src/vs/platform/update/test/electron-main/abstractUpdateService.test.ts
+@@ -49,7 +49,7 @@ class TestUpdateService extends AbstractUpdateService {
+ 		}
+ 	}
+ 
+-	protected buildUpdateFeedUrl(_quality: string, _commit: string, _options?: IUpdateURLOptions): string | undefined {
++	protected buildUpdateFeedUrl(_quality: string, _options?: IUpdateURLOptions): string | undefined {
+ 		return this.feedUrl;
  	}
  
