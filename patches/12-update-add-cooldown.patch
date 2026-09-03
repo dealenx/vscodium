@@ -33,20 +33,6 @@ index 5a1a34f7..333993cd 100644
  			'extensions.showRecommendationsOnlyOnDemand': {
  				type: 'boolean',
  				deprecationMessage: localize('extensionsShowRecommendationsOnlyOnDemand_Deprecated', "This setting is deprecated. Use extensions.ignoreRecommendations setting to control recommendation notifications. Use Extensions view's visibility actions to hide Recommended view by default."),
-@@ -371,6 +378,13 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
- 				scope: ConfigurationScope.APPLICATION,
- 				tags: ['advanced', 'usesOnlineServices']
- 			},
-+			'extensions.excludeUnsafes': {
-+				scope: ConfigurationScope.MACHINE,
-+				type: 'boolean',
-+				default: true,
-+				description: localize('extensionsExcludeUnsafes', "When enabled, it will download and cache the list of malicious and deprecated extensions. It's recommended to leave it enabled."),
-+				tags: ['usesOnlineServices']
-+			},
- 		}
- 	});
- 
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
 index 25417cdf..99ecaa2d 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
