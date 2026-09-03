@@ -13,3 +13,29 @@ index dc154d4b..f5ef3c57 100644
 + 		}
 +
  		run('sudo', [
+@@ -243,4 +245,8 @@
+ 		log('.', 'All dependencies up to date, skipping postinstall.');
+-		child_process.execSync('git config pull.rebase merges');
+-		child_process.execSync('git config blame.ignoreRevsFile .git-blame-ignore-revs');
++		try {
++			child_process.execSync('git config pull.rebase merges');
++			child_process.execSync('git config blame.ignoreRevsFile .git-blame-ignore-revs');
++		} catch (err) {
++			log('.', `Skipping git config: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
++		}
+ 		return;
+@@ -314,6 +316,12 @@
+ 	await runWithConcurrency(parallelTasks, concurrency);
+ 
+-	child_process.execSync('git config pull.rebase merges');
+-	child_process.execSync('git config blame.ignoreRevsFile .git-blame-ignore-revs');
++	// git config is cosmetic for CI builds; the tarball-transferred .git may reject
++	// writes inside the build container, which must not fail the install.
++	try {
++		child_process.execSync('git config pull.rebase merges');
++		child_process.execSync('git config blame.ignoreRevsFile .git-blame-ignore-revs');
++	} catch (err) {
++		log('.', `Skipping git config: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
++	}
+ 
+ 	fs.writeFileSync(stateFile, JSON.stringify(_state));
