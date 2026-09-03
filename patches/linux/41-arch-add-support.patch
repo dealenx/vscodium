@@ -112,9 +112,7 @@ index f9236eaf..c8263857 100644
  	});
  }
  
--const { electronVersion, msBuildId } = util.getElectronVersion();
-+const { electronVersion: _electronVersion, msBuildId } = util.getElectronVersion();
-+const electronVersion = process.env.VSCODE_ELECTRON_VERSION ?? _electronVersion;
+ const { electronVersion, msBuildId } = util.getElectronVersion();
  
  // In product builds, `@vscode/gulp-electron` is given an asset resolver (via the
  // `repo` option) that fetches the prebuilt Electron archives on demand from the
