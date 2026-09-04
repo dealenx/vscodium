@@ -1,14 +1,16 @@
 diff --git build/lib/extensions.ts b/build/lib/extensions.ts
-index 6a54fbe..a697500 100644
+index 6a54fbe..93b2e74 100644
 --- a/build/lib/extensions.ts
 +++ b/build/lib/extensions.ts
-@@ -482,12 +482,16 @@ export function packageCopilotExtensionStream(disableMangle: boolean): Stream {
+@@ -482,12 +482,18 @@ export function packageCopilotExtensionStream(disableMangle: boolean): Stream {
  
  	const productionDependencies = getProductionDependencies('extensions/copilot');
  	const dependenciesSrc = productionDependencies.map(d => path.relative(root, d)).map(d => [`${d}/**`, `!${d}/**/{test,tests}/**`]).flat();
 +	// VSCodium: copilot is built from source (no VSIX), so the SDK directory that
 +	// prepareBuiltInCopilotRipgrepShim requires must survive .moduleignore stripping.
-+	const copilotSdkSrc = gulp.src(['extensions/copilot/node_modules/@github/copilot/sdk/**'], { base: 'extensions/copilot', dot: true, allowEmpty: true });
++	// base '.' keeps the extensions/copilot/ prefix so files land inside the
++	// packaged extension when this stream is written to .build.
++	const copilotSdkSrc = gulp.src(['extensions/copilot/node_modules/@github/copilot/sdk/**'], { base: '.', dot: true, allowEmpty: true });
  
  	return es.merge(
  		localExtensionsStream,
