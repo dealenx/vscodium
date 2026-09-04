@@ -185,7 +185,7 @@ jobs:
             assets/*.exe
             assets/*.msi
           retention-days: 1
-        if: env.SHOULD_BUILD == 'yes'
+        if: env.SHOULD_BUILD == 'yes' && vars.DISABLE_STABLE_WINDOWS_SIGNING != 'yes'
 
       - name: Signing
         uses: signpath/github-action-submit-signing-request@c92b958760219087e01f8d67a1669ed57afe2627 # v2
@@ -200,7 +200,7 @@ jobs:
           # 8h to manually approve the request
           wait-for-completion-timeout-in-seconds: 28800
           output-artifact-directory: assets/
-        if: env.SHOULD_BUILD == 'yes'
+        if: env.SHOULD_BUILD == 'yes' && vars.DISABLE_STABLE_WINDOWS_SIGNING != 'yes'
 
       - name: Prepare checksums
         run: ./prepare_checksums.sh
