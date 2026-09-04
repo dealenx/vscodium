@@ -56,12 +56,7 @@ if [[ -f "../build/linux/${VSCODE_ARCH}/electron.sh" ]]; then
   # shellcheck disable=SC1090
   source "../build/linux/${VSCODE_ARCH}/electron.sh"
 
-  # Electron target version: MS >= 1.130 keeps it only in .npmrc (`target="..."`),
-  # older bases also had a literal in build/lib/electron.ts (used by the rewrite below).
-  TARGET=$( grep -Eo '^target="[0-9.]+"' .npmrc 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' )
-  if [[ -z "${TARGET}" ]]; then
-    TARGET=$( grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' build/lib/electron.ts )
-  fi
+  TARGET=$( grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' .npmrc )
 
   # Only fails at different major versions
   if [[ "${ELECTRON_VERSION%%.*}" != "${TARGET%%.*}" ]] && [[ "${IGNORE_ELECTRON_VERSION}" != "yes" ]]; then

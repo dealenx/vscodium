@@ -1,10 +1,8 @@
 diff --git a/src/vs/platform/update/common/update.config.contribution.ts b/src/vs/platform/update/common/update.config.contribution.ts
-index ae394003..6be1522d 100644
+index 2c63e9e6..e98ed806 100644
 --- a/src/vs/platform/update/common/update.config.contribution.ts
 +++ b/src/vs/platform/update/common/update.config.contribution.ts
-@@ -63,6 +63,12 @@ configurationRegistry.registerConfiguration({
- 			description: localize('updateMode', "Configure whether you receive automatic updates. The updates are fetched from a Microsoft online service."),
- 			deprecationMessage: localize('deprecated', "This setting is deprecated, please use '{0}' instead.", 'update.mode')
+@@ -65,2 +65,8 @@ configurationRegistry.registerConfiguration({
  		},
 +		'update.minReleaseAge': {
 +			type: 'integer',
@@ -13,15 +11,43 @@ index ae394003..6be1522d 100644
 +			description: localize('update.cooldown', "Control how old an update need to be before installing it (in hours)."),
 +		},
  		'update.enableWindowsBackgroundUpdates': {
- 			type: 'boolean',
- 			default: true,
+diff --git a/src/vs/platform/update/electron-main/abstractUpdateService.ts b/src/vs/platform/update/electron-main/abstractUpdateService.ts
+index d776f408..70b86dce 100644
+--- a/src/vs/platform/update/electron-main/abstractUpdateService.ts
++++ b/src/vs/platform/update/electron-main/abstractUpdateService.ts
+@@ -459,3 +459,26 @@ export abstract class AbstractUpdateService implements IUpdateService {
+ 
+-				return Promise.resolve({ lastest, update });
++				const minReleaseAge = this.configurationService.getValue<number>('update.minReleaseAge');
++
++				if(minReleaseAge === 0) {
++					return Promise.resolve({ lastest, update });
++				}
++
++				const releaseDate = update.timestamp ? new Date(Number.parseInt(String(update.timestamp), 10)) : null;
++
++				this.logService.info(`update#isLatestVersion() - releaseDate: ${releaseDate}`);
++
++				if(!releaseDate || isNaN(releaseDate.getTime())) {
++					return Promise.resolve(undefined);
++				}
++
++				const age = Math.round(Math.abs(Date.now() - releaseDate.getTime()) / (1000 * 60 * 60));
++
++				this.logService.info(`update#isLatestVersion() - releaseAge: ${age}, minReleaseAge: ${minReleaseAge}`);
++
++				if(age >= minReleaseAge) {
++					return Promise.resolve({ lastest, update });
++				}
++				else {
++					return Promise.resolve(undefined);
++				}
+ 			})
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-index 5a1a34f7..333993cd 100644
+index 464b3948..121bd09f 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-@@ -199,6 +199,13 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
- 				default: false,
- 				agentsWindow: { default: true, readOnly: true },
+@@ -168,2 +168,9 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
  			},
 +			'extensions.minReleaseAge': {
 +				type: 'integer',
@@ -31,25 +57,17 @@ index 5a1a34f7..333993cd 100644
 +				tags: ['usesOnlineServices']
 +			},
  			'extensions.showRecommendationsOnlyOnDemand': {
- 				type: 'boolean',
- 				deprecationMessage: localize('extensionsShowRecommendationsOnlyOnDemand_Deprecated', "This setting is deprecated. Use extensions.ignoreRecommendations setting to control recommendation notifications. Use Extensions view's visibility actions to hide Recommended view by default."),
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
-index 25417cdf..99ecaa2d 100644
+index 49b3ec6a..26f44277 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensionsWorkbenchService.ts
-@@ -111,7 +111,8 @@ export class Extension implements IExtension {
- 		@ITelemetryService private readonly telemetryService: ITelemetryService,
- 		@ILogService private readonly logService: ILogService,
+@@ -112,3 +112,4 @@ export class Extension implements IExtension {
  		@IFileService private readonly fileService: IFileService,
 -		@IProductService private readonly productService: IProductService
 +		@IProductService private readonly productService: IProductService,
 +		@IConfigurationService protected configurationService: IConfigurationService
  	) {
- 	}
- 
-@@ -347,7 +348,15 @@ export class Extension implements IExtension {
- 				return false;
- 			}
+@@ -348,3 +349,11 @@ export class Extension implements IExtension {
  			if (semver.gt(this.latestVersion, this.version)) {
 -				return true;
 +				const minReleaseAge = this.configurationService.getValue<number>('extensions.minReleaseAge');
@@ -62,5 +80,3 @@ index 25417cdf..99ecaa2d 100644
 +
 +				return age >= minReleaseAge;
  			}
- 			if (this.outdatedTargetPlatform) {
- 				return true;
