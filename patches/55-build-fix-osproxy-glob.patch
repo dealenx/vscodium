@@ -1,0 +1,12 @@
+--- a/build/gulpfile.vscode.ts
++++ b/build/gulpfile.vscode.ts
+@@ -382,7 +382,8 @@
+ 			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, '.moduleignore')))
+ 			.pipe(util.cleanNodeModules(path.join(import.meta.dirname, `.moduleignore.${process.platform}`)));
+ 		ensureOSProxyResolverPlatformPackage(platform, arch);
+-		const osProxyResolverPlatformPackage = gulp.src(getOSProxyResolverPlatformFiles(platform, arch), { base: '.', dot: true, allowEmpty: true });
++		const osProxyResolverPlatformFiles = getOSProxyResolverPlatformFiles(platform, arch);
++		const osProxyResolverPlatformPackage = osProxyResolverPlatformFiles.length ? gulp.src(osProxyResolverPlatformFiles, { base: '.', dot: true, allowEmpty: true }) : es.readArray<string>([]);
+ 		const deps = es.merge(cleanedDeps, osProxyResolverPlatformPackage)
+ 			.pipe(filter(getFoundryLocalExcludeFilter()))
+ 			.pipe(filter(getOSProxyResolverExcludeFilter(platform, arch)))
