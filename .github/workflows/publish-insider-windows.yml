@@ -222,6 +222,7 @@ jobs:
 
   winget:
     needs: build
+    if: github.repository_owner == 'VSCodium' && vars.DISABLE_INSIDER_WINGET != 'yes'
     runs-on: windows-2022
     environment: publish
     permissions:
