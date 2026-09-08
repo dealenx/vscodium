@@ -501,6 +501,7 @@ jobs:
       - build
     runs-on: ubuntu-latest
     environment: publish-linux-aur
+    if: github.repository_owner == 'VSCodium'
     permissions: {}
     strategy:
       fail-fast: false
@@ -541,7 +542,7 @@ jobs:
         platform:
         - amd64
         - arm64
-    if: needs.check.outputs.SHOULD_BUILD_SNAP != 'no' && vars.DISABLE_INSIDER_SNAP != 'yes'
+    if: github.repository_owner == 'VSCodium' && needs.check.outputs.SHOULD_BUILD_SNAP != 'no' && vars.DISABLE_INSIDER_SNAP != 'yes'
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -575,6 +576,7 @@ jobs:
       - build
     runs-on: ubuntu-latest
     environment: publish
+    if: github.repository_owner == 'VSCodium'
     permissions: {}
 
     steps:
