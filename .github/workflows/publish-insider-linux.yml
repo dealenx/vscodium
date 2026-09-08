@@ -273,6 +273,20 @@ jobs:
           persist-credentials: false
         if: env.DISABLED != 'yes'
 
+      - name: Setup Node.js environment
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+        if: env.DISABLED != 'yes'
+
+      - name: Setup jq
+        uses: vegardit/gha-setup-jq@fae9c6aa0b21dbe5bd3b77d280cf142e0a0a65b4 # 1.1.0
+        if: env.DISABLED != 'yes'
+
+      - name: Install GH
+        run: ./build/linux/install_gh.sh
+        if: env.DISABLED != 'yes'
+
       - name: Preparing Container
         uses: pkgforge-dev/anylinux-setup-action@0964f2258d6c93d1391359978dde081fd8b3c6af # v2
         if: env.DISABLED != 'yes'
@@ -284,13 +298,11 @@ jobs:
         if: env.DISABLED != 'yes'
 
       - name: Make AppImage
-        run: ./build/linux/anylinux-appimage/make-appimage.sh
+        run: ./build/linux/anylinux-appimage/build.sh
         if: env.DISABLED != 'yes'
 
-      - name: Move AppImage to assets
-        run: |
-          mkdir -p assets
-          mv dist/*.AppImage* assets/
+      - name: Prepare assets
+        run: ./build/linux/anylinux-appimage/prepare_assets.sh
         if: env.DISABLED != 'yes'
 
       - name: Release
