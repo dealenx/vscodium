@@ -527,7 +527,6 @@ jobs:
       - build
     runs-on: ubuntu-latest
     environment: publish-linux-snap
-    if: github.repository_owner == 'VSCodium'
     permissions: {}
     env:
       RELEASE_VERSION: ${{ needs.check.outputs.RELEASE_VERSION }}
